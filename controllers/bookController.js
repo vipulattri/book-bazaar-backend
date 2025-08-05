@@ -1,37 +1,76 @@
 import Book from '../models/Book.js';
+import cloudinary from '../utils/cloudinary.js';
+import fs from 'fs';
 
 export const getBooks = async (req, res) => {
-  const books = await Book.find().populate('userId', 'username');
-  res.json(books);
+  try {
+    const books = await Book.find().populate('userId', 'username');
+    res.json(books);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching books', error: error.message });
+  }
 };
 
 export const createBook = async (req, res) => {
-  const book = await Book.create({ ...req.body, userId: req.user.id });
-  res.status(201).json(book);
+  try {
+    let imageUrl = '';
+
+    // Upload to Cloudinary if file exists
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'books',
+      });
+      imageUrl = result.secure_url;
+
+      // Optionally delete the local file to clean up
+      fs.unlinkSync(req.file.path);
+    }
+
+    // ✅ Destructure all required fields
+    const { title, author, genre, price, condition, address, phone, subject } = req.body;
+
+    if (!title || !author || !genre || !price || !condition || !address || !phone || !subject) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const book = await Book.create({
+      title,
+      author,
+      genre,
+      price,
+      condition,
+      image: imageUrl,
+      address,
+      phone,
+      subject,
+      // userId field was removed as per your comment
+    });
+
+    res.status(201).json(book);
+  } catch (error) {
+    console.error('❌ Error in createBook:', error);
+    res.status(500).json({
+      message: 'Error creating book',
+      error: error.message,
+      stack: error.stack
+    });
+  }
 };
 
 export const updateBook = async (req, res) => {
-  const book = await Book.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(book);
+  try {
+    const book = await Book.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(book);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating book', error: error.message });
+  }
 };
 
 export const deleteBook = async (req, res) => {
-  await Book.findByIdAndDelete(req.params.id);
-  res.json({ message: 'Book deleted' });
+  try {
+    await Book.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Book deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting book', error: error.message });
+  }
 };
-
-
-// server/controllers/messageController.js
-import Message from '../models/Message.js';
-
-export const sendMessage = async (req, res) => {
-  const { receiverId, text, conversationId } = req.body;
-  const message = await Message.create({ senderId: req.user.id, receiverId, text, conversationId });
-  res.status(201).json(message);
-};
-
-export const getMessages = async (req, res) => {
-  const messages = await Message.find({ conversationId: req.params.conversationId });
-  res.json(messages);
-};
-
