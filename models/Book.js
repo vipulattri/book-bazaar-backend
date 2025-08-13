@@ -4,9 +4,9 @@ import { type } from 'os';
 const bookSchema = new mongoose.Schema({
   title: { type: String, required: true },
   author: { type: String, required: true },
-  genre: { type: String, required: true },
-  condition: { type: String, required: true },
-  price: { type: Number, required: true },
+  genre: { type: String, required: false },
+  condition: { type: String, required: false },
+  price: { type: Number, required: false },
   subject :{type: String, required: false},
   address:{type: String, required : false},
   name :{type:String , required : false},
