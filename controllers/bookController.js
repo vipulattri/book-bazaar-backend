@@ -22,28 +22,14 @@ export const createBook = async (req, res) => {
       });
       imageUrl = result.secure_url;
 
-      // Optionally delete the local file to clean up
+      // Delete local file
       fs.unlinkSync(req.file.path);
     }
 
-    // ✅ Destructure all required fields
-    const { title, author, genre, price, condition, address, phone, subject } = req.body;
-
-    if (!title || !author || !genre || !price || !condition || !address || !phone || !subject) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
+    // Just create the book with whatever data is passed
     const book = await Book.create({
-      title,
-      author,
-      genre,
-      price,
-      condition,
-      image: imageUrl,
-      address,
-      phone,
-      subject,
-      // userId field was removed as per your comment
+      ...req.body,            // all fields from request body
+      image: imageUrl || '',  // default to empty string if no image
     });
 
     res.status(201).json(book);
